@@ -1,68 +1,91 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#6366f1">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Physics OS // Smart Solver</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Physics OS Ultimate</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="text-zinc-300 h-screen overflow-hidden flex relative bg-[#09090b]">
 
-    <main class="flex-1 h-full overflow-y-auto no-scrollbar relative" id="feed-container">
-        <header class="sticky top-0 z-30 glass p-6 flex justify-between items-center border-b border-white/5">
-            <h1 class="text-xl font-bold text-white tracking-tighter">PHYSICS <span class="text-indigo-500">OS</span></h1>
-            <button onclick="toggleTheme()" class="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition" id="theme-icon">🌙</button>
+    <main class="flex-1 h-full overflow-y-auto no-scrollbar relative">
+        <header class="sticky top-0 z-30 glass p-4 md:p-6 flex justify-between items-center border-b border-white/5">
+            <h1 class="text-lg md:text-xl font-bold text-white tracking-tighter uppercase">Physics <span class="text-indigo-500">Ultimate</span></h1>
+            <button onclick="toggleConstants()" class="p-2 px-4 rounded-lg bg-indigo-600/20 text-indigo-400 text-xs font-bold border border-indigo-500/30">π Константы</button>
         </header>
 
-        <div class="sticky top-[73px] z-20 glass border-b border-white/5 p-3 flex gap-2 overflow-x-auto no-scrollbar">
+        <div class="sticky top-[65px] md:top-[73px] z-20 glass border-b border-white/5 p-3 flex gap-2 overflow-x-auto no-scrollbar">
             <button onclick="filterFormulas('all')" class="filter-btn active">Все</button>
             <button onclick="filterFormulas('mechanics')" class="filter-btn">Механика</button>
-            <button onclick="filterFormulas('pressure')" class="filter-btn">Давление</button>
+            <button onclick="filterFormulas('hydro')" class="filter-btn">Жидкости</button>
             <button onclick="filterFormulas('heat')" class="filter-btn">Теплота</button>
-            <button onclick="filterFormulas('electric')" class="filter-btn">Электрика</button>
+            <button onclick="filterFormulas('electric')" class="filter-btn">Электро</button>
             <button onclick="filterFormulas('optics')" class="filter-btn">Оптика</button>
+            <button onclick="filterFormulas('quantum')" class="filter-btn">Ядра</button>
+            <button onclick="openNuclearBalancer()" class="filter-btn bg-rose-600/20 border-rose-500/50 text-rose-400">☢️ Реактор</button>
         </div>
 
-        <div id="feed" class="max-w-3xl mx-auto px-4 py-8 space-y-4"></div>
+        <div id="feed" class="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
     </main>
 
-    <div id="constants-panel" class="fixed bottom-6 left-6 z-40">
-        <button onclick="toggleConstants()" class="glass w-12 h-12 rounded-full border border-white/10 flex items-center justify-center hover:border-indigo-500/50 shadow-2xl transition-all">
-            <span class="text-indigo-400 font-bold font-serif">π</span>
-        </button>
-        <div id="constants-list" class="absolute bottom-16 left-0 w-64 glass rounded-2xl border border-white/10 p-4 hidden shadow-2xl">
-            <h3 class="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-3">Константы СИ</h3>
-            <div id="constants-injected" class="space-y-2"></div>
+    <div id="constants-list" class="fixed top-20 right-4 left-4 md:left-auto md:w-72 glass rounded-2xl border border-white/10 p-4 hidden z-50 shadow-2xl">
+        <h3 class="text-[10px] font-mono text-zinc-500 uppercase mb-3 tracking-widest">Константы СИ</h3>
+        <div id="constants-injected" class="space-y-1 max-h-64 md:max-h-96 overflow-y-auto no-scrollbar"></div>
+    </div>
+
+    <div id="nuclear-modal" class="fixed inset-0 z-[80] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300 backdrop-blur-md">
+        <div class="glass w-full max-w-2xl p-6 md:p-8 rounded-3xl border border-rose-500/30">
+            <h2 class="text-xl font-bold text-white mb-6 text-center">Ядерный балансировщик</h2>
+            <div class="flex items-center justify-center gap-2 md:gap-4 text-lg mono">
+                <div class="bg-white/5 p-3 rounded-xl flex flex-col gap-1">
+                    <input id="nuc-a1" type="number" placeholder="A" class="w-10 bg-transparent text-center border-b border-rose-500 outline-none">
+                    <input id="nuc-z1" type="number" placeholder="Z" class="w-10 bg-transparent text-center border-b border-rose-500 outline-none">
+                </div>
+                <span>+</span>
+                <div class="bg-white/5 p-3 rounded-xl flex flex-col gap-1">
+                    <input id="nuc-a2" type="number" placeholder="A" class="w-10 bg-transparent text-center border-b border-rose-500 outline-none">
+                    <input id="nuc-z2" type="number" placeholder="Z" class="w-10 bg-transparent text-center border-b border-rose-500 outline-none">
+                </div>
+                <span class="text-rose-500">→</span>
+                <div class="p-3 border border-dashed border-rose-500 rounded-xl min-w-[50px] text-center">
+                    <div id="res-a" class="text-rose-400">?</div>
+                    <div id="res-z" class="text-rose-400">?</div>
+                    <div id="res-sym" class="font-bold text-white">X</div>
+                </div>
+            </div>
+            <button onclick="balanceNuclear()" class="w-full mt-6 py-4 bg-rose-600 rounded-xl font-bold active:scale-95 transition">Рассчитать</button>
+            <button onclick="closeNuclear()" class="w-full mt-2 py-2 text-zinc-500 text-xs">Закрыть</button>
         </div>
     </div>
 
-    <aside id="solver-panel" class="fixed inset-y-0 right-0 w-full md:w-[480px] bg-[#0c0c0e] border-l border-white/10 transform translate-x-full transition-transform duration-500 z-50 flex flex-col">
-        <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/20">
-            <span class="text-xs font-mono text-indigo-500 uppercase tracking-widest">Active Solver</span>
-            <button onclick="closePanel()" class="text-zinc-500 hover:text-white text-xl">✕</button>
+    <aside id="solver-panel" class="fixed inset-y-0 right-0 w-full md:w-[480px] bg-[#0c0c0e] border-l border-white/10 translate-x-full transition-transform duration-500 z-[90] flex flex-col max-md:inset-x-0 max-md:bottom-0 max-md:top-auto max-md:h-[85vh] max-md:translate-y-full max-md:translate-x-0 max-md:rounded-t-3xl">
+        <div class="hidden max-md:block w-12 h-1 bg-white/20 rounded-full mx-auto mt-4"></div>
+        <div class="p-6 flex justify-between items-center border-b border-white/5">
+            <span id="solver-title" class="text-xs font-bold text-indigo-500 uppercase tracking-widest"></span>
+            <button onclick="closePanel()" class="text-xl p-2">✕</button>
         </div>
-
-        <div class="flex-1 overflow-y-auto p-8 no-scrollbar">
-            <div id="solver-latex" class="mb-6 py-4 border-b border-white/5"></div>
-            <h2 id="solver-title" class="text-2xl font-bold text-white mb-2"></h2>
-            <p id="solver-desc" class="text-sm text-zinc-500 mb-10 leading-relaxed"></p>
-            <div id="inputs-container" class="space-y-8"></div>
+        <div class="flex-1 p-6 overflow-y-auto no-scrollbar pb-32">
+            <div id="solver-latex" class="mb-8 flex justify-center text-3xl p-6 bg-white/5 rounded-2xl overflow-x-auto"></div>
+            <div id="inputs-container" class="space-y-6"></div>
+            <div class="mt-8 p-4 bg-white/5 rounded-2xl border border-white/5"><canvas id="formulaChart"></canvas></div>
         </div>
-
-        <div class="p-8 bg-indigo-500/5 border-t border-indigo-500/20">
-            <label class="block text-[10px] font-mono text-indigo-400 uppercase mb-2">Calculated Result (SI)</label>
-            <div id="result-display" class="text-5xl font-bold text-white mono truncate mb-6">0</div>
-            <button onclick="exportToPDF()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold transition shadow-lg shadow-indigo-500/20">Сохранить в PDF</button>
+        <div class="p-6 border-t border-white/5 bg-[#0c0c0e] sticky bottom-0">
+            <div id="result-label" class="text-[10px] text-zinc-500 uppercase mb-1 text-center font-bold">Введите данные</div>
+            <div id="result-display" class="text-4xl font-bold text-white text-center truncate mb-4 mono">0</div>
+            <button onclick="togglePeriodic()" class="w-full py-4 bg-white/5 rounded-xl text-xs font-bold uppercase border border-white/10 active:bg-indigo-600 transition">Справочник масс</button>
         </div>
     </aside>
 
-    <div id="overlay" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+    <div id="periodic-panel" class="fixed bottom-0 left-0 right-0 z-[100] glass translate-y-full transition-transform duration-500 border-t border-white/10 p-6 max-h-[60vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4"><h4 class="font-bold text-white uppercase tracking-widest">Таблица масс</h4><button onclick="togglePeriodic()">✕</button></div>
+        <div id="periodic-grid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-10 gap-2"></div>
+    </div>
+
+    <div id="overlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 hidden" onclick="closeAll()"></div>
 
     <script src="script.js"></script>
 </body>

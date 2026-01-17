@@ -1,144 +1,140 @@
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js')
-    .then(() => console.log('PhysicsOS: Service Worker Registered'));
-}
-
 const formulas = [
-    // --- МЕХАНИКА ---
-    { id: 'velocity', category: 'mechanics', title: 'Скорость', latex: 'v = S / t', desc: 'Отношение пройденного пути ко времени.', vars: [{ symbol: 's', label: 'Путь', units: { 'м': 1, 'км': 1000 } }, { symbol: 't', label: 'Время', units: { 'с': 1, 'мин': 60, 'ч': 3600 } }], calc: (d) => (d.t || 0) !== 0 ? (d.s || 0) / d.t : 0 },
-    { id: 'acceleration', category: 'mechanics', title: 'Ускорение', latex: 'a = (v - v_0) / t', desc: 'Изменение скорости в единицу времени.', vars: [{ symbol: 'v', label: 'Кон. скорость', units: { 'м/с': 1 } }, { symbol: 'v0', label: 'Нач. скорость', units: { 'м/с': 1 } }, { symbol: 't', label: 'Время', units: { 'с': 1 } }], calc: (d) => (d.t || 0) !== 0 ? (d.v - d.v0) / d.t : 0 },
-    { id: 'gravity', category: 'mechanics', title: 'Сила тяжести', latex: 'F = m \\cdot g', desc: 'Сила притяжения к Земле.', vars: [{ symbol: 'm', label: 'Масса', units: { 'кг': 1, 'г': 0.001 } }, { symbol: 'g', label: 'Ускорение g', units: { 'м/с²': 1 } }], calc: (d) => (d.m || 0) * (d.g || 9.806) },
-    { id: 'density', category: 'mechanics', title: 'Плотность', latex: '\\rho = m / V', desc: 'Масса вещества в единице объема.', vars: [{ symbol: 'm', label: 'Масса', units: { 'кг': 1, 'г': 0.001 } }, { symbol: 'v', label: 'Объем', units: { 'м³': 1, 'л': 0.001, 'см³': 0.000001 } }], calc: (d) => (d.v || 0) !== 0 ? (d.m || 0) / d.v : 0 },
-    { id: 'momentum', category: 'mechanics', title: 'Импульс', latex: 'p = m \\cdot v', desc: 'Количество движения тела.', vars: [{ symbol: 'm', label: 'Масса', units: { 'кг': 1 } }, { symbol: 'v', label: 'Скорость', units: { 'м/с': 1 } }], calc: (d) => (d.m || 0) * (d.v || 0) },
-    { id: 'kin-energy', category: 'mechanics', title: 'Кинетическая энергия', latex: 'E_k = \\frac{mv^2}{2}', desc: 'Энергия движущегося тела.', vars: [{ symbol: 'm', label: 'Масса', units: { 'кг': 1 } }, { symbol: 'v', label: 'Скорость', units: { 'м/с': 1 } }], calc: (d) => ((d.m || 0) * Math.pow(d.v || 0, 2)) / 2 },
+    // --- МЕХАНИКА И ГИДРОСТАТИКА ---
+    { id:'dens', category:'mechanics', title:'Плотность', latex:'\\rho = m / V', vars:[{symbol:'ro', label:'Плотность', units:{'кг/м³':1, 'г/см³':1000}}, {symbol:'m', label:'Масса', units:{'кг':1, 'г':0.001}}, {symbol:'v', label:'Объем', units:{'м³':1, 'л':0.001}}], solve: d => d.ro===null ? {res:d.m/d.v, sym:'ρ', unit:'кг/м³'} : d.m===null ? {res:d.ro*d.v, sym:'m', unit:'кг'} : {res:d.m/d.ro, sym:'V', unit:'м³'} },
+    { id:'pres', category:'hydro', title:'Давление жидкости', latex:'P = \\rho g h', vars:[{symbol:'ro', label:'Плотность', units:{'кг/м³':1}}, {symbol:'h', label:'Глубина', units:{'м':1}}], solve: d => ({res:d.ro*9.81*d.h, sym:'P', unit:'Па'}) },
+    { id:'arch', category:'hydro', title:'Сила Архимеда', latex:'F_A = \\rho g V', vars:[{symbol:'ro', label:'Плотн. жидк.', units:{'кг/м³':1}}, {symbol:'v', label:'Объем тела', units:{'м³':1}}], solve: d => ({res:d.ro*9.81*d.v, sym:'Fa', unit:'Н'}) },
+    { id:'f_newton', category:'mechanics', title:'Закон Ньютона II', latex:'F = m a', vars:[{symbol:'m', label:'Масса', units:{'кг':1}}, {symbol:'a', label:'Ускорение', units:{'м/с²':1}}], solve: d => ({res:d.m*d.a, sym:'F', unit:'Н'}) },
+    { id:'f_fric', category:'mechanics', title:'Сила трения', latex:'F_{тр} = \\mu N', vars:[{symbol:'mu', label:'Коэф. μ', units:{'ед':1}}, {symbol:'n', label:'Реакция N', units:{'Н':1}}], solve: d => ({res:d.mu*d.n, sym:'Fтр', unit:'Н'}) },
 
-    // --- ДАВЛЕНИЕ ---
-    { id: 'pressure-s', category: 'pressure', title: 'Давление твердых тел', latex: 'p = F / S', desc: 'Сила на единицу площади.', vars: [{ symbol: 'f', label: 'Сила', units: { 'Н': 1 } }, { symbol: 's', label: 'Площадь', units: { 'м²': 1, 'см²': 0.0001 } }], calc: (d) => (d.s || 0) !== 0 ? (d.f || 0) / d.s : 0 },
-    { id: 'pressure-liq', category: 'pressure', title: 'Давление в жидкости', latex: 'p = \\rho g h', desc: 'Гидростатическое давление.', vars: [{ symbol: 'rho', label: 'Плотность', units: { 'кг/м³': 1 } }, { symbol: 'h', label: 'Глубина', units: { 'м': 1, 'см': 0.01 } }], calc: (d) => (d.rho || 0) * 9.806 * (d.h || 0) },
-    { id: 'archimedes', category: 'pressure', title: 'Сила Архимеда', latex: 'F_a = \\rho g V', desc: 'Выталкивающая сила в жидкости или газе.', vars: [{ symbol: 'rho', label: 'Плотность среды', units: { 'кг/м³': 1 } }, { symbol: 'v', label: 'Объем тела', units: { 'м³': 1, 'л': 0.001 } }], calc: (d) => (d.rho || 0) * 9.806 * (d.v || 0) },
+    // --- РАБОТА И ЭНЕРГИЯ ---
+    { id:'work', category:'mechanics', title:'Работа', latex:'A = F S', vars:[{symbol:'f', label:'Сила', units:{'Н':1}}, {symbol:'s', label:'Путь', units:{'м':1}}], solve: d => ({res:d.f*d.s, sym:'A', unit:'Дж'}) },
+    { id:'ekin', category:'mechanics', title:'Кин. энергия', latex:'E_k = \\frac{mv^2}{2}', vars:[{symbol:'m', label:'Масса', units:{'кг':1}}, {symbol:'v', label:'Скорость', units:{'м/с':1}}], solve: d => ({res:0.5*d.m*d.v*d.v, sym:'Ek', unit:'Дж'}) },
+    { id:'eff', category:'mechanics', title:'КПД (%)', latex:'\\eta = (A_п / A_з) \\cdot 100', vars:[{symbol:'ap', label:'Полезная А', units:{'Дж':1}}, {symbol:'az', label:'Затрат. А', units:{'Дж':1}}], solve: d => ({res:(d.ap/d.az)*100, sym:'η', unit:'%'}) },
 
     // --- ТЕПЛОТА ---
-    { id: 'heat-q', category: 'heat', title: 'Нагревание/Охлаждение', latex: 'Q = cm\\Delta t', desc: 'Теплота при изменении температуры.', vars: [{ symbol: 'c', label: 'Теплоемкость', units: { 'Дж/кг·C': 1 } }, { symbol: 'm', label: 'Масса', units: { 'кг': 1 } }, { symbol: 'dt', label: 'Δt', units: { '°C': 1 } }], calc: (d) => (d.c || 0) * (d.m || 0) * (d.dt || 0) },
-    { id: 'heat-burn', category: 'heat', title: 'Сгорание топлива', latex: 'Q = q \\cdot m', desc: 'Энергия при полном сгорании топлива.', vars: [{ symbol: 'q', label: 'Уд. теплота сгорания', units: { 'Дж/кг': 1, 'МДж/кг': 1e6 } }, { symbol: 'm', label: 'Масса', units: { 'кг': 1 } }], calc: (d) => (d.q || 0) * (d.m || 0) },
-    { id: 'heat-melt', category: 'heat', title: 'Плавление', latex: 'Q = \\lambda \\cdot m', desc: 'Теплота для превращения в жидкость.', vars: [{ symbol: 'l', label: 'Уд. теплота плавления', units: { 'Дж/кг': 1, 'кДж/кг': 1000 } }, { symbol: 'm', label: 'Масса', units: { 'кг': 1 } }], calc: (d) => (d.l || 0) * (d.m || 0) },
+    { id:'q_heat', category:'heat', title:'Нагревание', latex:'Q = cm\\Delta t', vars:[{symbol:'c', label:'Теплоемк.', units:{'Дж/кг°C':1}}, {symbol:'m', label:'Масса', units:{'кг':1}}, {symbol:'dt', label:'Δt', units:{'°C':1}}], solve: d => ({res:d.c*d.m*d.dt, sym:'Q', unit:'Дж'}) },
+    { id:'q_melt', category:'heat', title:'Плавление', latex:'Q = \\lambda m', vars:[{symbol:'l', label:'Уд. тепл. λ', units:{'Дж/кг':1}}, {symbol:'m', label:'Масса', units:{'кг':1}}], solve: d => ({res:d.l*d.m, sym:'Q', unit:'Дж'}) },
+    { id:'q_vap', category:'heat', title:'Парообразование', latex:'Q = L m', vars:[{symbol:'l', label:'Уд. тепл. L', units:{'Дж/кг':1}}, {symbol:'m', label:'Масса', units:{'кг':1}}], solve: d => ({res:d.l*d.m, sym:'Q', unit:'Дж'}) },
 
-    // --- ЭЛЕКТРИКА ---
-    { id: 'ohm-law', category: 'electric', title: 'Закон Ома', latex: 'I = U / R', desc: 'Сила тока через напряжение и сопротивление.', vars: [{ symbol: 'u', label: 'Напряжение', units: { 'В': 1, 'мВ': 0.001 } }, { symbol: 'r', label: 'Сопротивление', units: { 'Ом': 1, 'кОм': 1000 } }], calc: (d) => (d.r || 0) !== 0 ? (d.u || 0) / d.r : 0 },
-    { id: 'work-elec', category: 'electric', title: 'Работа тока', latex: 'A = U I t', desc: 'Энергия электрического тока.', vars: [{ symbol: 'u', label: 'Напряжение', units: { 'В': 1 } }, { symbol: 'i', label: 'Сила тока', units: { 'А': 1 } }, { symbol: 't', label: 'Время', units: { 'с': 1, 'мин': 60 } }], calc: (d) => (d.u || 0) * (d.i || 0) * (d.t || 0) },
-    { id: 'power-elec', category: 'electric', title: 'Мощность тока', latex: 'P = U \\cdot I', desc: 'Скорость совершения работы током.', vars: [{ symbol: 'u', label: 'Напряжение', units: { 'В': 1 } }, { symbol: 'i', label: 'Сила тока', units: { 'А': 1 } }], calc: (d) => (d.u || 0) * (d.i || 0) },
-    { id: 'resistance', category: 'electric', title: 'Сопротивление проводника', latex: 'R = \\rho \\frac{L}{S}', desc: 'Зависимость от материала и размеров.', vars: [{ symbol: 'rho', label: 'Уд. сопротивление', units: { 'Ом·мм²/м': 1 } }, { symbol: 'l', label: 'Длина', units: { 'м': 1 } }, { symbol: 's', label: 'Сечение', units: { 'мм²': 1 } }], calc: (d) => (d.s || 0) !== 0 ? (d.rho || 0) * (d.l || 0) / d.s : 0 },
+    // --- ЭЛЕКТРИЧЕСТВО ---
+    { id:'ohm', category:'electric', title:'Закон Ома', latex:'I = U / R', vars:[{symbol:'u', label:'Напряж. U', units:{'В':1}}, {symbol:'r', label:'Сопротив. R', units:{'Ом':1}}], solve: d => ({res:d.u/d.r, sym:'I', unit:'А'}) },
+    { id:'pow_el', category:'electric', title:'Мощность тока', latex:'P = UI', vars:[{symbol:'u', label:'Напряж. U', units:{'В':1}}, {symbol:'i', label:'Ток I', units:{'А':1}}], solve: d => ({res:d.u*d.i, sym:'P', unit:'Вт'}) },
 
     // --- ОПТИКА ---
-    { id: 'refraction', category: 'optics', title: 'Закон преломления', latex: 'n = \\sin(a) / \\sin(b)', desc: 'Показатель преломления среды.', vars: [{ symbol: 'sinA', label: 'sin угла падения', units: { 'ед': 1 } }, { symbol: 'sinB', label: 'sin угла преломл.', units: { 'ед': 1 } }], calc: (d) => (d.sinB || 0) !== 0 ? (d.sinA || 0) / d.sinB : 0 },
-    { id: 'opt-power', category: 'optics', title: 'Оптическая сила линзы', latex: 'D = 1 / F', desc: 'Преломляющая способность (Диоптрии).', vars: [{ symbol: 'f', label: 'Фокусное расстояние', units: { 'м': 1, 'см': 0.01 } }], calc: (d) => (d.f || 0) !== 0 ? 1 / d.f : 0 },
-    { id: 'magnification', category: 'optics', title: 'Увеличение линзы', latex: '\\Gamma = f / d', desc: 'Отношение расстояний от линзы.', vars: [{ symbol: 'f', label: 'Расст. до изобр.', units: { 'м': 1 } }, { symbol: 'd', label: 'Расст. до предм.', units: { 'м': 1 } }], calc: (d) => (d.d || 0) !== 0 ? (d.f || 0) / d.d : 0 },
-    { id: 'wavelength', category: 'optics', title: 'Длина волны', latex: '\\lambda = v / f', desc: 'Связь скорости и частоты света.', vars: [{ symbol: 'v', label: 'Скорость (c)', units: { 'м/с': 1 } }, { symbol: 'f', label: 'Частота', units: { 'Гц': 1, 'МГц': 1e6 } }], calc: (d) => (d.f || 0) !== 0 ? (d.v || 0) / d.f : 0 }
+
+    { id:'lens', category:'optics', title:'Тонкая линза', latex:'\\frac{1}{F} = \\frac{1}{d} + \\frac{1}{f}', vars:[{symbol:'f_dist', label:'До изобр. f', units:{'м':1}}, {symbol:'d_dist', label:'До объекта d', units:{'м':1}}], solve: d => ({res:1/(1/d.f_dist + 1/d.d_dist), sym:'F', unit:'м'}) },
+
+    { id:'snell', category:'optics', title:'Закон Снеллиуса', latex:'n_1 \\sin \\alpha = n_2 \\sin \\beta', vars:[{symbol:'n1', label:'n1', units:{'ед':1}}, {symbol:'a', label:'Угол падения', units:{'deg':1}}, {symbol:'n2', label:'n2', units:{'ед':1}}], solve: d => ({res:Math.asin((d.n1*Math.sin(d.a*Math.PI/180))/d.n2)*180/Math.PI, sym:'β', unit:'°'}) },
+
+    // --- КВАНТЫ ---
+    { id:'photon', category:'quantum', title:'Энергия фотона', latex:'E = h \\nu', vars:[{symbol:'n', label:'Частота ν', units:{'Гц':1, 'ТГц':1e12}}], solve: d => ({res:6.626e-34*d.n, sym:'E', unit:'Дж'}) }
 ];
 
 const constants = [
-    { name: 'Ускорение g', val: 9.806 },
-    { name: 'Скорость света c', val: 299792458 },
-    { name: 'Постоянная G', val: 6.674e-11 },
-    { name: 'Плотность воды', val: 1000 },
-    { name: 'Число Пи', val: 3.14159 }
+    { name: "Ускорение g", val: 9.81 }, { name: "Скорость света c", val: 3e8 },
+    { name: "Пост. Планка h", val: 6.62e-34 }, { name: "Газовая пост. R", val: 8.31 }
 ];
 
-let activeFormula = null, currentInputs = {}, multipliers = {};
+const elements = [
+    { s:'n', z:0, a:1 }, { s:'p', z:1, a:1 }, { s:'α', z:2, a:4 }, { s:'He', z:2, a:4 }, { s:'U', z:92, a:238 }
+];
 
-document.addEventListener('DOMContentLoaded', () => {
-    renderFeed();
-    renderConstants();
-    document.getElementById('overlay').onclick = closePanel;
-});
+let activeFormula = null, multipliers = {}, myChart = null;
+
+window.onload = () => { renderFeed(); renderConstants(); renderPeriodic(); };
 
 function renderFeed() {
-    const feed = document.getElementById('feed');
-    feed.innerHTML = '';
-    const isLight = document.body.classList.contains('light');
+    const feed = document.getElementById('feed'); feed.innerHTML = '';
     formulas.forEach(f => {
         const card = document.createElement('div');
-        card.className = "formula-card rounded-2xl p-6 cursor-pointer group";
-        card.dataset.category = f.category;
-        card.dataset.id = f.id;
-        card.innerHTML = `<div class="latex-view text-xl mb-4"></div><div class="flex justify-between items-center text-zinc-400 group-hover:text-white transition"><span class="font-semibold">${f.title}</span><span class="text-[10px] font-mono opacity-50 uppercase tracking-tighter">${f.category}</span></div>`;
+        card.className = "formula-card"; card.dataset.category = f.category;
+        card.innerHTML = `<div class="latex-v h-12 mb-2 flex items-center"></div><h3 class="text-[10px] font-bold uppercase text-zinc-500">${f.title}</h3>`;
         card.onclick = () => openSolver(f);
         feed.appendChild(card);
-        katex.render(f.latex, card.querySelector('.latex-view'), { displayMode: true, color: isLight ? '#18181b' : '#f4f4f5' });
+        katex.render(f.latex, card.querySelector('.latex-v'), { color: '#ffffff' });
     });
 }
 
 function openSolver(f) {
-    activeFormula = f; currentInputs = {}; multipliers = {};
-    const isLight = document.body.classList.contains('light');
+    activeFormula = f; multipliers = {};
     document.getElementById('solver-title').innerText = f.title;
-    document.getElementById('solver-desc').innerText = f.desc;
-    katex.render(f.latex, document.getElementById('solver-latex'), { displayMode: true, color: isLight ? '#18181b' : '#f4f4f5' });
+    katex.render(f.latex, document.getElementById('solver-latex'), { displayMode: true, color: '#6366f1' });
     const container = document.getElementById('inputs-container');
     container.innerHTML = '';
     f.vars.forEach(v => {
-        currentInputs[v.symbol] = 0;
-        const firstUnit = Object.keys(v.units)[0];
-        multipliers[v.symbol] = v.units[firstUnit];
+        multipliers[v.symbol] = Object.values(v.units)[0];
         const group = document.createElement('div');
-        group.innerHTML = `<label class="block text-[10px] font-mono text-zinc-500 uppercase mb-2">${v.label}</label><div class="flex gap-2"><input type="number" step="any" placeholder="0" class="flex-1 bg-black/20 border border-white/10 rounded-xl p-3 text-white mono focus:border-indigo-500 outline-none transition"><select class="bg-zinc-900 border border-white/10 rounded-xl text-xs px-2 text-zinc-400 outline-none">${Object.keys(v.units).map(u => `<option value="${v.units[u]}">${u}</option>`).join('')}</select></div>`;
-        const input = group.querySelector('input');
-        const select = group.querySelector('select');
-        input.oninput = (e) => { currentInputs[v.symbol] = (parseFloat(e.target.value) || 0) * multipliers[v.symbol]; updateResult(); };
-        select.onchange = (e) => { multipliers[v.symbol] = parseFloat(e.target.value); currentInputs[v.symbol] = (parseFloat(input.value) || 0) * multipliers[v.symbol]; updateResult(); };
+        group.innerHTML = `<label class="text-[10px] text-zinc-500 uppercase font-black">${v.label}</label>
+            <div class="flex gap-2 mt-1"><input type="number" inputmode="decimal" data-sym="${v.symbol}" class="flex-1 bg-white/10 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-indigo-500 transition mono">
+            <select class="bg-zinc-900 rounded-xl px-2 text-xs border border-white/10">${Object.keys(v.units).map(u=>`<option value="${v.units[u]}">${u}</option>`).join('')}</select></div>`;
+        group.querySelector('input').oninput = updateResult;
+        group.querySelector('select').onchange = (e) => { multipliers[v.symbol] = parseFloat(e.target.value); updateResult(); };
         container.appendChild(group);
     });
-    updateResult();
-    document.getElementById('solver-panel').classList.remove('translate-x-full');
-    document.getElementById('overlay').classList.replace('opacity-0', 'opacity-100');
-    document.getElementById('overlay').classList.remove('pointer-events-none');
+    document.getElementById('solver-panel').classList.add('active');
+    document.getElementById('overlay').classList.remove('hidden');
 }
 
 function updateResult() {
-    if (!activeFormula) return;
-    const res = activeFormula.calc(currentInputs);
-    document.getElementById('result-display').innerText = typeof res === 'number' ? (res % 1 === 0 ? res : res.toFixed(4)) : res;
+    const data = {};
+    activeFormula.vars.forEach(v => {
+        const val = document.querySelector(`input[data-sym="${v.symbol}"]`).value;
+        data[v.symbol] = val === "" ? null : parseFloat(val) * multipliers[v.symbol];
+    });
+    const sol = activeFormula.solve(data);
+    if(sol && !isNaN(sol.res)) {
+        document.getElementById('result-display').innerText = sol.res.toPrecision(5);
+        document.getElementById('result-label').innerText = `Результат: ${sol.sym} (${sol.unit})`;
+        updateChart(sol.res);
+    }
 }
 
-function toggleTheme() {
-    document.body.classList.toggle('light');
-    document.getElementById('theme-icon').innerText = document.body.classList.contains('light') ? '☀️' : '🌙';
-    renderFeed();
-    if (activeFormula) openSolver(activeFormula);
+function updateChart(val) {
+    const ctx = document.getElementById('formulaChart').getContext('2d');
+    if(myChart) myChart.destroy();
+    myChart = new Chart(ctx, { type:'line', data:{ labels:['0','25%','50%','75%','100%'], datasets:[{data:[0, val*0.4, val*0.7, val*0.9, val], borderColor:'#6366f1', tension:0.4, fill:true, backgroundColor:'rgba(99,102,241,0.05)'}] }, options:{plugins:{legend:{display:false}}, scales:{y:{display:false},x:{grid:{display:false}}}} });
+}
+
+function balanceNuclear() {
+    const a = (+document.getElementById('nuc-a1').value || 0) + (+document.getElementById('nuc-a2').value || 0);
+    const z = (+document.getElementById('nuc-z1').value || 0) + (+document.getElementById('nuc-z2').value || 0);
+    document.getElementById('res-a').innerText = a; document.getElementById('res-z').innerText = z;
+    const el = elements.find(e => e.z === z); document.getElementById('res-sym').innerText = el ? el.s : '?';
 }
 
 function renderConstants() {
     const container = document.getElementById('constants-injected');
     constants.forEach(c => {
-        const div = document.createElement('div');
-        div.className = 'constant-item';
-        div.innerHTML = `<span class="text-xs">${c.name}</span><span class="constant-val font-mono">${c.val.toExponential(2)}</span>`;
-        div.onclick = () => {
-            const input = document.querySelector('#inputs-container input');
-            if (input) { input.value = c.val; input.dispatchEvent(new Event('input')); }
+        const d = document.createElement('div'); d.className = 'flex justify-between p-2 hover:bg-white/5 rounded-lg cursor-pointer';
+        d.innerHTML = `<span class="text-[10px] text-zinc-400">${c.name}</span><span class="text-indigo-400 font-mono text-[10px]">${c.val}</span>`;
+        d.onclick = () => {
+            const i = document.querySelector('#inputs-container input');
+            if(i) { i.value = c.val; i.dispatchEvent(new Event('input')); }
         };
-        container.appendChild(div);
+        container.appendChild(d);
+    });
+}
+
+function renderPeriodic() {
+    const grid = document.getElementById('periodic-grid');
+    elements.forEach(el => {
+        const d = document.createElement('div'); d.className = "bg-white/5 p-3 rounded-xl text-center cursor-pointer border border-white/5 hover:border-indigo-500";
+        d.innerHTML = `<div class="text-[9px] text-zinc-500">${el.z}</div><div class="font-black text-white">${el.s}</div><div class="text-[9px] text-indigo-400">${el.a}</div>`;
+        d.onclick = () => {
+            const i = document.querySelector('#inputs-container input');
+            if(i) { i.value = el.a; i.dispatchEvent(new Event('input')); }
+        };
+        grid.appendChild(d);
     });
 }
 
 function toggleConstants() { document.getElementById('constants-list').classList.toggle('hidden'); }
-
-function closePanel() {
-    document.getElementById('solver-panel').classList.add('translate-x-full');
-    document.getElementById('overlay').classList.replace('opacity-100', 'opacity-0');
-    document.getElementById('overlay').classList.add('pointer-events-none');
-}
-
+function togglePeriodic() { document.getElementById('periodic-panel').classList.toggle('translate-y-full'); }
+function closePanel() { document.getElementById('solver-panel').classList.remove('active'); document.getElementById('overlay').classList.add('hidden'); }
 function filterFormulas(cat) {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase() === (cat === 'all' ? 'все' : cat === 'mechanics' ? 'механика' : cat === 'pressure' ? 'давление' : cat === 'heat' ? 'теплота' : cat === 'electric' ? 'электрика' : 'оптика')));
-    document.querySelectorAll('.formula-card').forEach(c => c.classList.toggle('hidden', cat !== 'all' && c.dataset.category !== cat));
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase().includes(cat) || (cat==='all' && b.innerText==='ВСЕ')));
+    document.querySelectorAll('.formula-card').forEach(c => c.style.display = (cat==='all' || c.dataset.category===cat) ? 'flex' : 'none');
 }
-
-function exportToPDF() {
-    const { jsPDF } = window.jspdf; const doc = new jsPDF();
-    doc.setFontSize(22); doc.text("Physics OS Report", 20, 20);
-    doc.setFontSize(14); doc.text(`Formula: ${activeFormula.title}`, 20, 40);
-    let y = 60;
-    Object.keys(currentInputs).forEach(k => { doc.text(`${k}: ${currentInputs[k]} SI`, 20, y); y += 10; });
-    doc.setTextColor(99, 102, 241); doc.text(`Result: ${document.getElementById('result-display').innerText}`, 20, y + 10);
-    doc.save('solution.pdf');
-}
+function openNuclearBalancer() { document.getElementById('nuclear-modal').classList.remove('opacity-0', 'pointer-events-none'); }
+function closeNuclear() { document.getElementById('nuclear-modal').classList.add('opacity-0', 'pointer-events-none'); }
+function closeAll() { closePanel(); closeNuclear(); }
