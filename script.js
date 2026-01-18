@@ -197,6 +197,34 @@ function updateChart(v) {
     });
 }
 
+/** NUCLEAR BALANCER ENGINE **/
+
+function toggleNuclearBalancer() {
+    const modal = document.getElementById('nuclear-balancer-modal');
+    modal.classList.toggle('active');
+}
+
+function runBalance() {
+    const a1 = parseInt(document.getElementById('a1').value) || 0;
+    const z1 = parseInt(document.getElementById('z1').value) || 0;
+    const a2 = parseInt(document.getElementById('a2').value) || 0;
+    const z2 = parseInt(document.getElementById('z2').value) || 0;
+    const a3 = parseInt(document.getElementById('a3').value) || 0;
+    const z3 = parseInt(document.getElementById('z3').value) || 0;
+
+    const resA = (a1 + a2) - a3;
+    const resZ = (z1 + z2) - z3;
+
+    document.getElementById('res-a').innerText = resA;
+    document.getElementById('res-z').innerText = resZ;
+    document.getElementById('info-a').innerText = a1 + a2;
+    document.getElementById('info-z').innerText = z1 + z2;
+
+    // Расчет энергии на основе дефекта (условный пример)
+    const energy = Math.abs(resA * 0.86).toFixed(2);
+    document.getElementById('nuc-energy').innerText = energy + " МэВ";
+}
+
 function renderMaterials() {
     const grid = document.getElementById('periodic-grid'); grid.innerHTML = '';
     _DB.forEach(m => {
