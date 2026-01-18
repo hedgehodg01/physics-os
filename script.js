@@ -1,10 +1,4 @@
-/** * Physics OS Ultimate Core - Full Version
- * Protected & Optimized for GitHub Pages
- */
-
-const _SYMBOLS = { ro: 'density', c: 'capacity', l: 'melt', v_heat: 'vap', tm: 'tMelt' };
-
-// 1. ПОЛНАЯ БАЗА МАТЕРИАЛОВ
+// 1. БАЗА МАТЕРИАЛОВ (Плотность, Теплоемкость, Плавление, Парообразование, Температура плавления)
 const materials = [
     { name: "Вода", density: 1000, capacity: 4200, melt: 334000, vap: 2260000, tMelt: 0 },
     { name: "Лёд", density: 900, capacity: 2100, melt: 334000, tMelt: 0 },
@@ -18,52 +12,48 @@ const materials = [
     { name: "Воздух", density: 1.29, capacity: 1000, melt: 0, tMelt: -213 }
 ];
 
-// 2. ТАБЛИЦА ИЗОТОПОВ
+// 2. БАЗА ИЗОТОПОВ (Для ядерного реактора)
 const elements = [
-    { s:'n', z:0, a:1 }, { s:'p', z:1, a:1 }, { s:'α', z:2, a:4 }, { s:'Li', z:3, a:7 }, 
-    { s:'Be', z:4, a:9 }, { s:'C', z:6, a:12 }, { s:'N', z:7, a:14 }, { s:'O', z:8, a:16 }, { s:'U', z:92, a:238 }
+    { s:'n', z:0, a:1 }, { s:'p', z:1, a:1 }, { s:'α', z:2, a:4 }, { s:'He', z:2, a:4 }, { s:'Li', z:3, a:7 },
+    { s:'Be', z:4, a:9 }, { s:'B', z:5, a:11 }, { s:'C', z:6, a:12 }, { s:'N', z:7, a:14 }, { s:'O', z:8, a:16 },
+    { s:'F', z:9, a:19 }, { s:'Ne', z:10, a:20 }, { s:'Na', z:11, a:23 }, { s:'Mg', z:12, a:24 }, { s:'U', z:92, a:238 }
 ];
 
-// 3. ПОЛНЫЙ СПИСОК ФОРМУЛ (ВСЕ РАЗДЕЛЫ)
+// 3. ПОЛНЫЙ СПИСОК ФОРМУЛ
 const formulas = [
-    // Механика и Кинематика
+    // МЕХАНИКА
     { id:'speed', category:'mechanics', title:'Скорость', latex:'v = S / t', vars:[{symbol:'s', label:'Путь (S)', units:{'м':1}}, {symbol:'t', label:'Время (t)', units:{'с':1}}], solve: d => ({res:d.s/d.t, sym:'v', unit:'м/с'}) },
-    { id:'accel', category:'mechanics', title:'Ускорение', latex:'a = \\frac{v - v_0}{t}', vars:[{symbol:'v', label:'v кон', units:{'м/с':1}}, {symbol:'v0', label:'v нач', units:{'м/с':1}}, {symbol:'t', label:'Время', units:{'с':1}}], solve: d => ({res:(d.v-d.v0)/d.t, sym:'a', unit:'м/с²'}) },
+    { id:'accel', category:'mechanics', title:'Ускорение', latex:'a = (v - v_0) / t', vars:[{symbol:'v', label:'v кон', units:{'м/с':1}}, {symbol:'v0', label:'v нач', units:{'м/с':1}}, {symbol:'t', label:'Время', units:{'с':1}}], solve: d => ({res:(d.v-d.v0)/d.t, sym:'a', unit:'м/с²'}) },
     { id:'f_newton', category:'mechanics', title:'Закон Ньютона II', latex:'F = m a', vars:[{symbol:'m', label:'Масса', units:{'кг':1}}, {symbol:'a', label:'Ускорение', units:{'м/с²':1}}], solve: d => ({res:d.m*d.a, sym:'F', unit:'Н'}) },
-    { id:'grav', category:'mechanics', title:'Всемирное тяготение', latex:'F = G \\frac{m_1 m_2}{r^2}', vars:[{symbol:'m1', label:'Масса 1', units:{'кг':1}}, {symbol:'m2', label:'Масса 2', units:{'кг':1}}, {symbol:'r', label:'Расстояние', units:{'м':1}}], solve: d => ({res:6.67e-11*(d.m1*d.m2)/(d.r**2), sym:'F', unit:'Н'}) },
-    { id:'dens', category:'mechanics', title:'Плотность', latex:'\\rho = m / V', vars:[{symbol:'ro', label:'Плотность', units:{'кг/м³':1}}, {symbol:'m', label:'Масса', units:{'кг':1}}, {symbol:'v', label:'Объем', units:{'м³':1}}], solve: d => d.ro===null ? {res:d.m/d.v, sym:'ρ', unit:'кг/м³'} : d.m===null ? {res:d.ro*d.v, sym:'m', unit:'кг'} : {res:d.m/d.ro, sym:'V', unit:'м³'} },
-    
-    // Гидростатика
-    { id:'pres', category:'hydro', title:'Давление жидкости', latex:'P = \\rho g h', vars:[{symbol:'ro', label:'Плотность', units:{'кг/м³':1}}, {symbol:'h', label:'Глубина', units:{'м':1}}], solve: d => ({res:d.ro*9.81*d.h, sym:'P', unit:'Па'}) },
-    { id:'arch', category:'hydro', title:'Сила Архимеда', latex:'F_A = \\rho g V', vars:[{symbol:'ro', label:'Плотн. жидк.', units:{'кг/м³':1}}, {symbol:'v', label:'Объем тела', units:{'м³':1}}], solve: d => ({res:d.ro*9.81*d.v, sym:'Fa', unit:'Н'}) },
+    { id:'dens', category:'mechanics', title:'Плотность', latex:'\\rho = m / V', vars:[{symbol:'ro', label:'Плотность (ρ)', units:{'кг/м³':1}}, {symbol:'m', label:'Масса', units:{'кг':1}}, {symbol:'v', label:'Объем', units:{'м³':1}}], solve: d => d.ro===null ? {res:d.m/d.v, sym:'ρ', unit:'кг/м³'} : d.m===null ? {res:d.ro*d.v, sym:'m', unit:'кг'} : {res:d.m/d.ro, sym:'V', unit:'м³'} },
+    { id:'f_fric', category:'mechanics', title:'Сила трения', latex:'F_{тр} = \\mu N', vars:[{symbol:'mu', label:'Коэф. μ', units:{'ед':1}}, {symbol:'n', label:'Реакция N', units:{'Н':1}}], solve: d => ({res:d.mu*d.n, sym:'Fтр', unit:'Н'}) },
+    { id:'ekin', category:'mechanics', title:'Кин. энергия', latex:'E_k = \\frac{mv^2}{2}', vars:[{symbol:'m', label:'Масса', units:{'кг':1}}, {symbol:'v', label:'Скорость', units:{'м/с':1}}], solve: d => ({res:0.5*d.m*d.v*d.v, sym:'Ek', unit:'Дж'}) },
 
-    // Теплота
-    { id:'q_heat', category:'heat', title:'Нагревание', latex:'Q = cm\\Delta t', vars:[{symbol:'c', label:'Уд. тепл. (c)', units:{'Дж/кг°C':1}}, {symbol:'m', label:'Масса', units:{'кг':1}}, {symbol:'dt', label:'Δt', units:{'°C':1}}], solve: d => ({res:d.c*d.m*d.dt, sym:'Q', unit:'Дж'}) },
+    // ЖИДКОСТИ
+    { id:'pres', category:'hydro', title:'Давление жидкости', latex:'P = \\rho g h', vars:[{symbol:'ro', label:'Плотность (ρ)', units:{'кг/м³':1}}, {symbol:'h', label:'Глубина', units:{'м':1}}], solve: d => ({res:d.ro*9.81*d.h, sym:'P', unit:'Па'}) },
+    { id:'arch', category:'hydro', title:'Сила Архимеда', latex:'F_A = \\rho g V', vars:[{symbol:'ro', label:'Плотность (ρ)', units:{'кг/м³':1}}, {symbol:'v', label:'Объем тела', units:{'м³':1}}], solve: d => ({res:d.ro*9.81*d.v, sym:'Fa', unit:'Н'}) },
+
+    // ТЕПЛОТА
+    { id:'q_heat', category:'heat', title:'Нагревание', latex:'Q = cm\\Delta t', vars:[{symbol:'c', label:'Уд. теплоемк. (c)', units:{'Дж/кг°C':1}}, {symbol:'m', label:'Масса', units:{'кг':1}}, {symbol:'dt', label:'Δt', units:{'°C':1}}], solve: d => ({res:d.c*d.m*d.dt, sym:'Q', unit:'Дж'}) },
     { id:'q_melt', category:'heat', title:'Плавление', latex:'Q = \\lambda m', vars:[{symbol:'l', label:'Уд. тепл. λ', units:{'Дж/кг':1}}, {symbol:'m', label:'Масса', units:{'кг':1}}, {symbol:'tm', label:'Т. плавл.', units:{'°C':1}}], solve: d => ({res:d.l*d.m, sym:'Q', unit:'Дж'}) },
     { id:'q_vap', category:'heat', title:'Парообразование', latex:'Q = L m', vars:[{symbol:'v_heat', label:'Уд. тепл. L', units:{'Дж/кг':1}}, {symbol:'m', label:'Масса', units:{'кг':1}}], solve: d => ({res:d.v_heat*d.m, sym:'Q', unit:'Дж'}) },
 
-    // Электричество
+    // ЭЛЕКТРИЧЕСТВО
     { id:'ohm', category:'electric', title:'Закон Ома', latex:'I = U / R', vars:[{symbol:'u', label:'Напряж. U', units:{'В':1}}, {symbol:'r', label:'Сопротив. R', units:{'Ом':1}}], solve: d => ({res:d.u/d.r, sym:'I', unit:'А'}) },
     { id:'pow_el', category:'electric', title:'Мощность тока', latex:'P = UI', vars:[{symbol:'u', label:'Напряж. U', units:{'В':1}}, {symbol:'i', label:'Ток I', units:{'А':1}}], solve: d => ({res:d.u*d.i, sym:'P', unit:'Вт'}) },
-    { id:'coulomb', category:'electric', title:'Закон Кулона', latex:'F = k \\frac{q_1 q_2}{r^2}', vars:[{symbol:'q1', label:'Заряд 1', units:{'Кл':1}}, {symbol:'q2', label:'Заряд 2', units:{'Кл':1}}, {symbol:'r', label:'Расстояние', units:{'м':1}}], solve: d => ({res:9e9*(d.q1*d.q2)/(d.r**2), sym:'F', unit:'Н'}) },
 
-    // Оптика и Кванты
+    // ОПТИКА
     { id:'lens', category:'optics', title:'Тонкая линза', latex:'\\frac{1}{F} = \\frac{1}{d} + \\frac{1}{f}', vars:[{symbol:'f_dist', label:'До изобр. f', units:{'м':1}}, {symbol:'d_dist', label:'До объекта d', units:{'м':1}}], solve: d => ({res:1/(1/d.f_dist + 1/d.d_dist), sym:'F', unit:'м'}) },
+
+    // ЯДЕРНАЯ ФИЗИКА
     { id:'photon', category:'quantum', title:'Энергия фотона', latex:'E = h \\nu', vars:[{symbol:'n', label:'Частота ν', units:{'Гц':1}}], solve: d => ({res:6.626e-34*d.n, sym:'E', unit:'Дж'}) },
     { id:'einstein', category:'quantum', title:'Энергия (E=mc²)', latex:'E = mc^2', vars:[{symbol:'m', label:'Масса (m)', units:{'кг':1}}], solve: d => ({res:d.m * 9e16, sym:'E', unit:'Дж'}) }
 ];
 
-// 4. КОНСТАНТЫ
-const constants = [
-    { name: "Ускорение g", val: 9.81 },
-    { name: "Скорость света c", val: 3e8 },
-    { name: "Грав. пост. G", val: 6.67e-11 },
-    { name: "Пост. Планка h", val: 6.626e-34 }
-];
+const constants = [{ name: "Ускорение g", val: 9.81 }, { name: "Скорость света c", val: 3e8 }, { name: "G (Тяготение)", val: 6.67e-11 }];
 
 let activeFormula = null, multipliers = {}, myChart = null;
 
-// Инициализация системы
 window.onload = () => { renderFeed(); renderConstants(); };
 
 function renderFeed() {
@@ -93,19 +83,25 @@ function openSolver(f) {
         group.querySelector('input').oninput = updateResult;
         container.appendChild(group);
     });
+
+    // Настраиваем кнопку справочника материалов в решателе
+    const matBtn = document.getElementById('mat-button');
+    matBtn.onclick = renderMaterials;
+
     document.getElementById('solver-panel').classList.add('active');
     document.getElementById('overlay').classList.remove('hidden');
 }
 
 function renderMaterials() {
     document.getElementById('panel-title').innerText = "Свойства веществ";
-    const grid = document.getElementById('periodic-grid'); grid.innerHTML = '';
+    const grid = document.getElementById('periodic-grid');
+    grid.innerHTML = '';
     materials.forEach(m => {
         const d = document.createElement('div');
         d.className = "bg-white/5 p-4 rounded-xl text-center cursor-pointer border border-white/5 hover:border-indigo-500 transition";
         d.innerHTML = `<div class="text-white font-bold text-xs">${m.name}</div><div class="text-[9px] text-zinc-500 mt-1">ρ=${m.density} | t=${m.tMelt}°</div>`;
         d.onclick = () => {
-            Object.keys(_SYMBOLS).forEach(key => fillInput(key, m[_SYMBOLS[key]]));
+            fillInput('ro', m.density); fillInput('c', m.capacity); fillInput('l', m.melt); fillInput('v_heat', m.vap); fillInput('tm', m.tMelt);
             togglePeriodic();
         };
         grid.appendChild(d);
@@ -115,14 +111,17 @@ function renderMaterials() {
 
 function renderIsotopes() {
     document.getElementById('panel-title').innerText = "Таблица ядер";
-    const grid = document.getElementById('periodic-grid'); grid.innerHTML = '';
+    const grid = document.getElementById('periodic-grid');
+    grid.innerHTML = '';
     elements.forEach(el => {
         const d = document.createElement('div');
         d.className = "bg-white/5 p-3 rounded-xl text-center cursor-pointer border border-white/5 hover:border-rose-500";
         d.innerHTML = `<div class="text-[9px] text-zinc-500">${el.z}</div><div class="font-black text-white">${el.s}</div><div class="text-[9px] text-rose-400">${el.a}</div>`;
         d.onclick = () => {
-            const a1 = document.getElementById('nuc-a1'); const z1 = document.getElementById('nuc-z1');
-            if (!a1.value) { a1.value = el.a; z1.value = el.z; } 
+            // Если открыт реактор, подставляем в пустые поля
+            const a1 = document.getElementById('nuc-a1');
+            const z1 = document.getElementById('nuc-z1');
+            if (!a1.value) { a1.value = el.a; z1.value = el.z; }
             else { document.getElementById('nuc-a2').value = el.a; document.getElementById('nuc-z2').value = el.z; }
             togglePeriodic();
         };
@@ -131,18 +130,18 @@ function renderIsotopes() {
     if (document.getElementById('periodic-panel').classList.contains('translate-y-full')) togglePeriodic();
 }
 
-function fillInput(s, v) {
-    const i = document.querySelector(`input[data-sym="${s}"]`);
-    if(i && v !== undefined) { i.value = v; i.dispatchEvent(new Event('input')); }
+function fillInput(sym, val) {
+    const i = document.querySelector(`input[data-sym="${sym}"]`);
+    if(i) { i.value = val; i.dispatchEvent(new Event('input')); }
 }
 
 function updateResult() {
-    const d = {};
+    const data = {};
     activeFormula.vars.forEach(v => {
         const val = document.querySelector(`input[data-sym="${v.symbol}"]`).value;
-        d[v.symbol] = val === "" ? null : parseFloat(val) * multipliers[v.symbol];
+        data[v.symbol] = val === "" ? null : parseFloat(val) * multipliers[v.symbol];
     });
-    const sol = activeFormula.solve(d);
+    const sol = activeFormula.solve(data);
     if(sol && !isNaN(sol.res)) {
         document.getElementById('result-display').innerText = sol.res.toPrecision(5);
         document.getElementById('result-label').innerText = `Результат: ${sol.sym} (${sol.unit})`;
@@ -150,17 +149,23 @@ function updateResult() {
     }
 }
 
-function updateChart(v) {
+function updateChart(val) {
     const ctx = document.getElementById('formulaChart').getContext('2d');
     if(myChart) myChart.destroy();
-    myChart = new Chart(ctx, { type:'line', data:{ labels:['0','25','50','75','100'], datasets:[{data:[0, v*0.3, v*0.6, v*0.8, v], borderColor:'#6366f1', tension:0.4, fill:true, backgroundColor:'rgba(99,102,241,0.05)'}] }, options:{plugins:{legend:{display:false}}, scales:{y:{display:false},x:{grid:{display:false}}}} });
+    myChart = new Chart(ctx, { type:'line', data:{ labels:['0','25%','50%','75%','100%'], datasets:[{data:[0, val*0.3, val*0.6, val*0.8, val], borderColor:'#6366f1', tension:0.4, fill:true, backgroundColor:'rgba(99,102,241,0.05)'}] }, options:{plugins:{legend:{display:false}}, scales:{y:{display:false},x:{grid:{display:false}}}} });
 }
 
 function balanceNuclear() {
-    const a = (+document.getElementById('nuc-a1').value || 0) + (+document.getElementById('nuc-a2').value || 0);
-    const z = (+document.getElementById('nuc-z1').value || 0) + (+document.getElementById('nuc-z2').value || 0);
-    document.getElementById('res-a').innerText = a; document.getElementById('res-z').innerText = z;
-    const el = elements.find(e => e.z === z); document.getElementById('res-sym').innerText = el ? el.s : '?';
+    const a1 = +document.getElementById('nuc-a1').value || 0;
+    const z1 = +document.getElementById('nuc-z1').value || 0;
+    const a2 = +document.getElementById('nuc-a2').value || 0;
+    const z2 = +document.getElementById('nuc-z2').value || 0;
+    const resA = a1 + a2;
+    const resZ = z1 + z2;
+    document.getElementById('res-a').innerText = resA;
+    document.getElementById('res-z').innerText = resZ;
+    const el = elements.find(e => e.z === resZ);
+    document.getElementById('res-sym').innerText = el ? el.s : '?';
 }
 
 function renderConstants() {
@@ -176,9 +181,9 @@ function renderConstants() {
 function toggleConstants() { document.getElementById('constants-list').classList.toggle('hidden'); }
 function togglePeriodic() { document.getElementById('periodic-panel').classList.toggle('translate-y-full'); }
 function closePanel() { document.getElementById('solver-panel').classList.remove('active'); document.getElementById('overlay').classList.add('hidden'); }
-function filterFormulas(cat) { 
+function filterFormulas(cat) {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase().includes(cat) || (cat==='all' && b.innerText==='Все')));
-    document.querySelectorAll('.formula-card').forEach(c => c.style.display = (cat==='all' || c.dataset.category===cat) ? 'flex' : 'none'); 
+    document.querySelectorAll('.formula-card').forEach(c => c.style.display = (cat==='all' || c.dataset.category===cat) ? 'flex' : 'none');
 }
 function openNuclearBalancer() { document.getElementById('nuclear-modal').classList.remove('opacity-0', 'pointer-events-none'); }
 function closeNuclear() { document.getElementById('nuclear-modal').classList.add('opacity-0', 'pointer-events-none'); }
