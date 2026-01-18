@@ -1,15 +1,15 @@
 {
-  "name": "Physics OS Ultimate",
   "short_name": "PhysicsOS",
-  "start_url": "index.html",
-  "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#6366f1",
+  "name": "Physics OS Ultimate Edition",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/541/541300.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "favicon.png",
+      "type": "image/png",
+      "sizes": "512x512"
     }
-  ]
+  ],
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#050507",
+  "theme_color": "#6366f1"
 }
