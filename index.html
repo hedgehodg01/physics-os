@@ -86,6 +86,151 @@
             <button onclick="filterFormulas('quantum')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-white/5 transition text-sm font-medium text-zinc-400 hover:text-white">Ядерная физика</button>
         </nav>
 
+        <button onclick="toggleNuclearBalancer()" class="w-full text-left px-4 py-3 rounded-2xl bg-gradient-to-r from-indigo-900/40 to-transparent border border-indigo-500/30 text-indigo-300 text-sm font-black flex items-center gap-3 hover:scale-105 transition-all shadow-lg shadow-indigo-500/5">
+    <span class="relative flex h-3 w-3">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+    </span>
+    ЯДЕРНЫЙ БАЛАНСИРОВЩИК
+</button>
+
+<div id="nuclear-balancer-modal">
+    <div class="balancer-content">
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-indigo-500 rounded-b-full"></div>
+
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h2 class="text-2xl font-black tracking-tighter italic">NUCLEAR <span class="text-indigo-500">BALANCER</span></h2>
+                <p class="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Симулятор сохранения массового и зарядового чисел</p>
+            </div>
+            <button onclick="toggleNuclearBalancer()" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-red-500/20 hover:text-red-500 transition">✕</button>
+        </div>
+
+        <div class="nuc-grid">
+            <div class="nuc-cell">
+                <input type="number" id="a1" placeholder="A" oninput="runBalance()">
+                <div class="element-symbol">X</div>
+                <input type="number" id="z1" placeholder="Z" oninput="runBalance()">
+            </div>
+
+            <div class="text-xl font-bold text-zinc-700">+</div>
+
+            <div class="nuc-cell">
+                <input type="number" id="a2" placeholder="A" oninput="runBalance()">
+                <div class="element-symbol">Y</div>
+                <input type="number" id="z2" placeholder="Z" oninput="runBalance()">
+            </div>
+
+            <div class="text-2xl text-indigo-500 mx-2">→</div>
+
+            <div class="nuc-cell">
+                <input type="number" id="a3" placeholder="A" oninput="runBalance()">
+                <div class="element-symbol">Q</div>
+                <input type="number" id="z3" placeholder="Z" oninput="runBalance()">
+            </div>
+
+            <div class="text-xl font-bold text-zinc-700">+</div>
+
+            <div class="nuc-cell border-indigo-500/40 bg-indigo-500/5">
+                <div id="res-a" class="font-mono font-bold text-indigo-400">?</div>
+                <div class="element-symbol text-indigo-500">R</div>
+                <div id="res-z" class="font-mono font-bold text-emerald-400">?</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4 mt-8">
+            <div class="p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
+                <span class="text-[9px] font-black text-zinc-500 uppercase">Сумма масс (ΣA)</span>
+                <div id="info-a" class="text-xl font-mono mt-1">0</div>
+            </div>
+            <div class="p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
+                <span class="text-[9px] font-black text-zinc-500 uppercase">Сумма заряда (ΣZ)</span>
+                <div id="info-z" class="text-xl font-mono mt-1">0</div>
+            </div>
+            <div class="p-6 bg-indigo-600 rounded-3xl text-white shadow-lg shadow-indigo-500/20">
+                <span class="text-[9px] font-black uppercase opacity-70">Энергия (Q)</span>
+                <div id="nuc-energy" class="text-xl font-black mt-1">0.00 МэВ</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Центрирование и стилизация контейнера */
+#nuclear-balancer-modal {
+    display: none; /* Скрыто по умолчанию */
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(5, 5, 7, 0.85);
+    backdrop-filter: blur(20px);
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease-out;
+}
+
+#nuclear-balancer-modal.active {
+    display: flex;
+}
+
+.balancer-content {
+    background: #0c0c0e;
+    width: 90%;
+    max-width: 850px;
+    border-radius: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 40px;
+    position: relative;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* Стилизация ядерных ячеек (как на скриншоте, но чище) */
+.nuc-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+    align-items: center;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 30px;
+    border-radius: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.nuc-cell {
+    background: #141417;
+    border-radius: 20px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.nuc-cell input {
+    background: transparent;
+    border: none;
+    color: #6366f1;
+    font-family: 'Monaco', monospace;
+    font-weight: bold;
+    text-align: center;
+    width: 40px;
+    outline: none;
+}
+
+.nuc-cell .element-symbol {
+    font-size: 1.5rem;
+    font-weight: 900;
+    margin: 5px 0;
+    color: white;
+}
+
+/* Анимация */
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+</style>
+
         <button onclick="toggleConverter()" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-white/5 transition text-sm font-medium text-indigo-400 hover:text-white flex items-center gap-2">
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
     Умный конвертер
