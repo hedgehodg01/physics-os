@@ -265,3 +265,29 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; }
     background: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
 }
+.constant-card:active {
+    transform: scale(0.95);
+    border-color: #818cf8;
+    background: rgba(99, 102, 241, 0.2);
+}
+
+/* Стили для модалки админки (если вдруг их нет) */
+#admin-auth-modal {
+    transition: all 0.3s ease;
+}
+
+.admin-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+    color: white;
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.2s;
+}
+.admin-input:focus {
+    border-color: #6366f1;
+    background: rgba(255, 255, 255, 0.08);
+}

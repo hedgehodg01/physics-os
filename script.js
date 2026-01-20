@@ -60,12 +60,22 @@ const constants = [
     { name: "Газовая постоянная", val: "8.314 Дж/(моль·К)", sym: "R" }
 ];
 
+window.copyToClipboard = function(text) {
+    const numericValue = text.replace(/[^0-9.eE-]/g, ''); // Извлекаем только число
+    navigator.clipboard.writeText(numericValue).then(() => {
+        alert('Значение скопировано: ' + numericValue);
+    });
+};
+
 function initConstants() {
     const container = document.getElementById('constants-injected');
     if (!container) return;
     container.innerHTML = constants.map(c => `
-        <div class="constant-card group">
-            <div class="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-2">${c.name}</div>
+        <div class="constant-card group cursor-pointer" onclick="copyToClipboard('${c.val}')">
+            <div class="flex justify-between items-start">
+                <div class="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-2">${c.name}</div>
+                <svg class="w-3 h-3 text-zinc-600 group-hover:text-indigo-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
             <div class="text-2xl font-black text-white group-hover:text-indigo-400 transition-colors">${c.sym}</div>
             <div class="text-sm font-mono text-zinc-400 mt-3 opacity-80">${c.val}</div>
         </div>
@@ -109,10 +119,20 @@ let myChart = null;
 
 // Инициализация при загрузке
 window.onload = () => {
-    renderFeed();      // Рисуем формулы
-    initConstants();   // Наполняем константы
-    initConverter();   // Наполняем конвертер
+    loadCustomFormulas(); // Загружаем то, что добавил админ
+    renderFeed();
+    initConstants();
+    initConverter();
 };
+
+function loadCustomFormulas() {
+    const localData = JSON.parse(localStorage.getItem('custom_formulas') || '[]');
+    localData.forEach(f => {
+        // Превращаем строку solveString обратно в рабочую функцию
+        f.solve = new Function('d', `return { res: (${f.solveString}), sym: '${f.id}', unit: '${f.unit}' }`);
+        formulas.push(f);
+    });
+}
 
 // Рендеринг карточек на главной
 function renderFeed() {
@@ -277,10 +297,27 @@ window.filterFormulas = function(category) {
 };
 
 window.closeAll = function() {
-    closePanel();
-    document.getElementById('nuclear-balancer-modal')?.classList.add('hidden');
-    document.getElementById('unit-converter-modal')?.classList.add('hidden');
+    console.log("Закрытие всех окон...");
+
+    // Список всех возможных модалок по ID
+    const elementsToHide = [
+        'admin-auth-modal',
+        'admin-dashboard',
+        'nuclear-balancer-modal',
+        'unit-converter-modal',
+        'overlay'
+    ];
+
+    elementsToHide.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+
+    // Убираем активные классы панелей
+    document.getElementById('solver-panel')?.classList.remove('active');
     document.getElementById('periodic-panel')?.classList.add('translate-y-full');
+
+    activeFormula = null;
 };
 
 // --- ФУНКЦИИ ОТКРЫТИЯ МОДАЛЬНЫХ ОКОН ---
@@ -317,17 +354,122 @@ window.togglePeriodic = function() {
 
 // Исправленная функция закрытия всего
 window.closeAll = function() {
-    // Скрываем модалки
-    document.getElementById('nuclear-balancer-modal')?.classList.add('hidden');
-    document.getElementById('unit-converter-modal')?.classList.add('hidden');
-    document.getElementById('admin-auth-modal')?.classList.add('hidden');
+    console.log("Закрытие всех окон...");
 
-    // Прячем боковую панель решения и панель констант
+    // Список всех возможных модалок по ID
+    const elementsToHide = [
+        'admin-auth-modal',
+        'admin-dashboard',
+        'nuclear-balancer-modal',
+        'unit-converter-modal',
+        'overlay'
+    ];
+
+    elementsToHide.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+
+    // Убираем активные классы панелей
     document.getElementById('solver-panel')?.classList.remove('active');
     document.getElementById('periodic-panel')?.classList.add('translate-y-full');
 
-    // Скрываем оверлей
-    document.getElementById('overlay')?.classList.add('hidden');
-
     activeFormula = null;
 };
+
+let adminClickSequence = [];
+const secretCode = ['e', 'e', 'g', 'g', 'c', 'c'];
+
+function initConstants() {
+    const container = document.getElementById('constants-injected');
+    if (!container) return;
+    container.innerHTML = constants.map(c => `
+        <div class="constant-card group" onclick="checkAdminSequence('${c.sym}')">
+            <div class="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-2">${c.name}</div>
+            <div class="text-2xl font-black text-white group-hover:text-indigo-400 transition-colors">${c.sym}</div>
+            <div class="text-sm font-mono text-zinc-400 mt-3 opacity-80">${c.val}</div>
+        </div>
+    `).join('');
+}
+
+window.checkAdminSequence = function(sym) {
+    // Очищаем символ от лишних знаков (если в массиве 'c', а приходит 'c')
+    const cleanSym = sym.toLowerCase().trim();
+    adminClickSequence.push(cleanSym);
+
+    // Держим в массиве только последние 6 нажатий
+    if (adminClickSequence.length > 6) {
+        adminClickSequence.shift();
+    }
+
+    // Проверяем совпадение с кодом
+    if (JSON.stringify(adminClickSequence) === JSON.stringify(secretCode)) {
+        adminClickSequence = []; // Сбрасываем код
+        openAdminModal();
+    }
+};
+
+function openAdminModal() {
+    const modal = document.getElementById('admin-auth-modal');
+    const overlay = document.getElementById('overlay');
+    if (modal) {
+        modal.classList.remove('hidden');
+        overlay.classList.remove('hidden');
+        // Добавим легкий звуковой сигнал или вибрацию для фидбека (опционально)
+        if (window.navigator.vibrate) window.navigator.vibrate(50);
+        console.log("Admin mode activated");
+    }
+}
+
+window.loginAdmin = function() {
+    const passInput = document.getElementById('admin-pass');
+    if (passInput.value === '5182') {
+        document.getElementById('admin-auth-modal').classList.add('hidden');
+        document.getElementById('admin-dashboard').classList.remove('hidden');
+    } else {
+        alert('Доступ запрещен');
+    }
+};
+
+window.addNewFormula = function() {
+    const id = document.getElementById('new-id').value;
+    const cat = document.getElementById('new-cat').value;
+    const title = document.getElementById('new-title').value;
+    const latex = document.getElementById('new-latex').value;
+    const unit = document.getElementById('new-unit').value;
+    const solveRaw = document.getElementById('new-solve').value;
+    const varsRaw = document.getElementById('new-vars').value;
+
+    if(!id || !title || !solveRaw) {
+        alert("Заполните основные поля!");
+        return;
+    }
+
+    const vars = varsRaw.split(',').map(pair => {
+        const [symbol, label] = pair.split('=').map(s => s.trim());
+        return { symbol, label };
+    });
+
+    const newFormula = {
+        id: id,
+        category: cat,
+        title: title,
+        latex: latex,
+        vars: vars,
+        solveString: solveRaw, // Сохраняем строку для восстановления после перезагрузки
+        unit: unit
+    };
+
+    // Добавляем в локальный массив
+    saveFormulaToLocal(newFormula);
+
+    // Очистка и закрытие
+    window.closeAll();
+    renderFeed();
+};
+
+function saveFormulaToLocal(formula) {
+    let localData = JSON.parse(localStorage.getItem('custom_formulas') || '[]');
+    localData.push(formula);
+    localStorage.setItem('custom_formulas', JSON.stringify(localData));
+}

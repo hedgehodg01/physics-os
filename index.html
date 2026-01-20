@@ -118,6 +118,57 @@
         <div id="constants-injected" class="p-8 grid grid-cols-2 md:grid-cols-5 gap-4"></div>
     </div>
 
+<div id="admin-auth-modal" class="fixed inset-0 hidden z-[300] flex items-center justify-center p-4">
+    <div class="bg-zinc-950 border border-white/10 w-full max-w-sm rounded-[40px] p-10 shadow-2xl">
+        <h2 class="text-2xl font-black mb-6 uppercase italic">Admin Access</h2>
+        <input type="password" id="admin-pass" placeholder="Password" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white mb-4 outline-none focus:border-indigo-500">
+        <button onclick="loginAdmin()" class="w-full bg-white text-black p-4 rounded-2xl font-black uppercase hover:bg-zinc-200 transition">Войти</button>
+        <button onclick="closeAll()" class="w-full mt-4 text-zinc-500 text-xs uppercase font-bold">Отмена</button>
+    </div>
+</div>
+
+<div id="admin-dashboard" class="fixed inset-0 hidden z-[350] flex items-center justify-center p-4">
+    <div class="bg-zinc-950 border border-white/10 w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="p-8 border-b border-white/5 flex justify-between items-center">
+            <h2 class="text-2xl font-black uppercase italic">Управление формулами</h2>
+            <button onclick="closeAll()" class="text-zinc-500 hover:text-white">✕</button>
+        </div>
+
+        <div class="p-8 overflow-y-auto space-y-6">
+            <div class="grid grid-cols-2 gap-4">
+                <input type="text" id="new-id" placeholder="ID (напр: f_power)" class="admin-input">
+                <select id="new-cat" class="admin-input">
+                    <option value="mechanics">Механика</option>
+                    <option value="heat">Термодинамика</option>
+                    <option value="electric">Электричество</option>
+                    <option value="mag">Магнетизм</option>
+                    <option value="waves">Оптика</option>
+                    <option value="quantum">Квантовая</option>
+                </select>
+            </div>
+            <input type="text" id="new-title" placeholder="Название (напр: Мощность)" class="admin-input">
+            <input type="text" id="new-latex" placeholder="LaTeX (напр: P = A / t)" class="admin-input">
+
+            <div class="p-4 bg-white/5 rounded-2xl border border-white/10">
+                <p class="text-[10px] font-bold text-zinc-500 uppercase mb-4">Переменные (через запятую: символ=название)</p>
+                <input type="text" id="new-vars" placeholder="a=Работа, t=Время" class="admin-input">
+            </div>
+
+            <div class="p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/20">
+                <p class="text-[10px] font-bold text-indigo-400 uppercase mb-4">Логика решения (JS) и Ед. изм.</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="new-solve" placeholder="d.a / d.t" class="admin-input">
+                    <input type="text" id="new-unit" placeholder="Вт" class="admin-input">
+                </div>
+            </div>
+
+            <button onclick="addNewFormula()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white p-5 rounded-2xl font-black uppercase transition-all shadow-lg shadow-indigo-500/20">
+                Добавить в базу данных
+            </button>
+        </div>
+    </div>
+</div>
+    
     <script src="script.js"></script>
 </body>
 </html>
