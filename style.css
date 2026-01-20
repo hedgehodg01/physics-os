@@ -291,3 +291,8 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; }
     border-color: #6366f1;
     background: rgba(255, 255, 255, 0.08);
 }
+
+.constant-card {
+    user-select: none; /* Запрещает выделение текста при клике */
+    -webkit-user-select: none;
+}

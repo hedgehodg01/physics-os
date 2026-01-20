@@ -393,19 +393,34 @@ function initConstants() {
 }
 
 window.checkAdminSequence = function(sym) {
-    // Очищаем символ от лишних знаков (если в массиве 'c', а приходит 'c')
     const cleanSym = sym.toLowerCase().trim();
     adminClickSequence.push(cleanSym);
 
-    // Держим в массиве только последние 6 нажатий
+    // Вывод в консоль (нажми F12 на сайте, чтобы увидеть это)
+    console.log("Нажато:", cleanSym, "Текущая очередь:", adminClickSequence.join('-'));
+
     if (adminClickSequence.length > 6) {
         adminClickSequence.shift();
     }
 
-    // Проверяем совпадение с кодом
-    if (JSON.stringify(adminClickSequence) === JSON.stringify(secretCode)) {
-        adminClickSequence = []; // Сбрасываем код
-        openAdminModal();
+    const codeString = adminClickSequence.join('');
+    const targetCode = 'eeggcc';
+
+    if (codeString === targetCode) {
+        console.log("!!! КОД ВЕРЕН !!!");
+        adminClickSequence = [];
+
+        // На GitHub Pages лучше вызывать через небольшую задержку
+        setTimeout(() => {
+            const modal = document.getElementById('admin-auth-modal');
+            const overlay = document.getElementById('overlay');
+            if (modal && overlay) {
+                modal.classList.remove('hidden');
+                overlay.classList.remove('hidden');
+                // Фокус на поле пароля
+                document.getElementById('admin-pass').focus();
+            }
+        }, 100);
     }
 };
 
