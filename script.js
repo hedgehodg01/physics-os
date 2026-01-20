@@ -191,9 +191,58 @@ function updateResult() {
 function updateChart(v) {
     const ctx = document.getElementById('formulaChart').getContext('2d');
     if(myChart) myChart.destroy();
+
+    let labels = [];
+    let chartData = [];
+    const points = 15; // Количество точек для плавности
+
+    for (let i = 0; i <= points; i++) {
+        let x = i / points; // Нормализованное значение от 0 до 1
+        labels.push(''); // Убираем лишние подписи снизу
+
+        // ЛОГИКА ГРАФИКА В ЗАВИСИМОСТИ ОТ ТИПА ФОРМУЛЫ
+        if (activeFormula.id.includes('acc') || activeFormula.id.includes('sq')) {
+            // Квадратичная зависимость (например, S = at²/2)
+            chartData.push(v * (x * x));
+        } else if (activeFormula.id === 'ohm' || activeFormula.id.includes('inv')) {
+            // Обратная зависимость (I = U/R) - строим от 0.1 до 1, чтобы не было деления на 0
+            let invX = 0.1 + (x * 0.9);
+            chartData.push(v * (0.1 / invX));
+        } else {
+            // Линейная зависимость (V = S/t, F = ma)
+            chartData.push(v * x);
+        }
+    }
+
     myChart = new Chart(ctx, {
-        type:'line', data:{ labels:['0','1','2','3','4'], datasets:[{data:[0, v*0.2, v*0.5, v*0.8, v], borderColor:'#6366f1', borderWidth:3, tension:0.4, fill:true, backgroundColor:'rgba(99,102,241,0.05)', pointRadius:0}] },
-        options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{display:false},y:{display:false}} }
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: chartData,
+                borderColor: '#6366f1',
+                borderWidth: 2,
+                tension: 0.4, // Делает линию плавной (кривой Безье)
+                fill: true,
+                backgroundColor: 'rgba(99, 102, 241, 0.05)',
+                pointRadius: 0,
+                pointHoverRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 800, easing: 'easeOutQuart' },
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { display: false },
+                y: {
+                    display: true,
+                    grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
+                    ticks: { color: '#444', font: { size: 8 } }
+                }
+            }
+        }
     });
 }
 
